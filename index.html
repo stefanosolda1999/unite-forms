@@ -1509,8 +1509,7 @@ let _questions = [];
 function quid() { return 'q' + Date.now() + Math.random().toString(36).slice(2,5); }
 
 async function refreshQuestions() {
-  try { _questions = await sbGetQ(); }
-  catch(e) { toast('⚠️  Errore caricamento domande', true); }
+  _questions = await sbGetQ();
 }
 
 /* ── Banca domande ───────────────────────── */
@@ -1613,7 +1612,7 @@ document.getElementById('newQText').addEventListener('keydown', e => {
 
 document.getElementById('navDomande').addEventListener('click', async e => {
   e.preventDefault();
-  await renderQBank();
+  try { await renderQBank(); } catch(err) { console.error('renderQBank:', err); }
   openModal('questionsModal');
 });
 
