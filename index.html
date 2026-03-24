@@ -1152,11 +1152,47 @@
    UNITE! — Client Forms Manager
    ═══════════════════════════════════════════════════ */
 
-const KEY = 'unite_clients';
-const AVATARS = [
-  '#e74c3c','#e67e22','#f39c12','#2ecc71','#1abc9c',
-  '#3498db','#8b5cf6','#e91e63','#00bcd4','#4caf50'
-];
+/* ── Supabase ────────────────────────────── */
+const SB_URL = 'https://mikncbvsvyjdgpxdbhyr.supabase.co/rest/v1';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pa25jYnZzdnlqZGdweGRiaHlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNzIzMTEsImV4cCI6MjA4OTk0ODMxMX0.1Msks_9zIoN3OxT86I5UB2i16CPPO3G-J3tM4QyR0FA';
+const SB_HDR = {
+  'apikey':        SB_KEY,
+  'Authorization': 'Bearer ' + SB_KEY,
+  'Content-Type':  'application/json'
+};
+
+async function sbGet() {
+  const r = await fetch(`${SB_URL}/clients?order=data.desc`, { headers: SB_HDR });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+async function sbInsert(data) {
+  const r = await fetch(`${SB_URL}/clients`, {
+    method: 'POST',
+    headers: { ...SB_HDR, 'Prefer': 'return=minimal' },
+    body: JSON.stringify(data)
+  });
+  if (!r.ok) throw new Error(await r.text());
+}
+async function sbUpdate(id, data) {
+  const r = await fetch(`${SB_URL}/clients?id=eq.${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: { ...SB_HDR, 'Prefer': 'return=minimal' },
+    body: JSON.stringify(data)
+  });
+  if (!r.ok) throw new Error(await r.text());
+}
+async function sbDelete(id) {
+  const r = await fetch(`${SB_URL}/clients?id=eq.${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    headers: SB_HDR
+  });
+  if (!r.ok) throw new Error(await r.text());
+}
+
+/* ── Constants ───────────────────────────── */
+const FAKE_KEY = 'unite_clients'; // non più usato, mantenuto per compatibilità
+const AVATARS = ['#e74c3c','#e67e22','#f39c12','#2ecc71','#1abc9c','#3498db','#8b5cf6','#e91e63','#00bcd4','#4caf50'];
 
 const STATUS_BADGE = {
   'creato':      'badge-creato',
@@ -1171,18 +1207,14 @@ const STATUS_LABEL = {
   'risposto':    'Risposto'
 };
 
-const DEMO = [
-  { id:'d1', nome:'Marco',  cognome:'Bianchi',  email:'marco.bianchi@techcorp.it',    azienda:'TechCorp S.r.l.',  status:'creato',      data:'2026-03-01', oggetto:'',                   dettagli:'',                                          note:'Primo contatto — da definire obiettivi' },
-  { id:'d2', nome:'Sara',   cognome:'Conti',    email:'sara.conti@designstudio.it',   azienda:'Design Studio',    status:'in modifica', data:'2026-03-10', oggetto:'Revisione Brand',     dettagli:'Aggiornamento identità visiva completa',    note:'In attesa di feedback dal team creativo' },
-  { id:'d3', nome:'Luca',   cognome:'Ferrari',  email:'luca.ferrari@globalinc.com',   azienda:'Global Inc.',      status:'inviato',     data:'2026-03-15', oggetto:'Proposta Commerciale',dettagli:'Materiale promozionale e offerta allegata',  note:'Follow-up previsto per il 28/03' },
-  { id:'d4', nome:'Elena',  cognome:'Moretti',  email:'elena.moretti@startuphub.it',  azienda:'Startup Hub',      status:'risposto',    data:'2026-03-18', oggetto:'Partnership Strategy', dettagli:'Accordo di collaborazione firmato e attivo', note:'Cliente attivo — feedback eccellente' }
-];
+/* ── In-memory state ─────────────────────── */
+let _clients     = [];   // cache Supabase
+let _editDomande = [];   // domande in editing (in-memory, salvate solo su "Salva Modifiche")
+let _viewId      = null;
 
 /* ── Helpers ─────────────────────────────── */
 function esc(s) {
-  return String(s||'')
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 function uid() { return 'c' + Date.now() + Math.random().toString(36).slice(2,6); }
 function avatarColor(s) {
@@ -1190,14 +1222,6 @@ function avatarColor(s) {
   return AVATARS[Math.abs(h) % AVATARS.length];
 }
 function initials(n,c) { return ((n?.[0]||'')+(c?.[0]||'')).toUpperCase(); }
-
-/* ── Storage ─────────────────────────────── */
-function load() { return JSON.parse(localStorage.getItem(KEY) || 'null'); }
-function save(d) { localStorage.setItem(KEY, JSON.stringify(d)); }
-
-function boot() {
-  if (!load()) save(DEMO);
-}
 
 /* ── Stats ───────────────────────────────── */
 function updateStats(list) {
@@ -1213,30 +1237,36 @@ function updateStats(list) {
 }
 
 /* ── Render ──────────────────────────────── */
-function render() {
-  const all = load() || [];
-  updateStats(all);
+async function render() {
+  const el = document.getElementById('clientsList');
+  el.innerHTML = '<div class="empty-state"><div class="empty-icon" style="font-size:32px">⏳</div><h3>Caricamento…</h3></div>';
+  try {
+    _clients = await sbGet();
+  } catch(e) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div><h3>Errore di connessione</h3><p>Impossibile raggiungere Supabase.</p></div>';
+    toast('⚠️  Errore connessione Supabase', true);
+    return;
+  }
+  updateStats(_clients);
+
   const q       = (document.getElementById('clientSearch')?.value  || '').toLowerCase().trim();
   const qOgg    = (document.getElementById('oggettoSearch')?.value || '').toLowerCase().trim();
   const qStatus = (document.getElementById('statusFilter')?.value  || '');
-
-  // highlight active filter select
   const sel = document.getElementById('statusFilter');
   if (sel) sel.classList.toggle('active', !!qStatus);
 
-  const list = all.filter(c => {
-    if (q      && !(((c.nome+' '+c.cognome).toLowerCase().includes(q)) || (c.azienda||'').toLowerCase().includes(q) || (c.email||'').toLowerCase().includes(q))) return false;
-    if (qOgg   && !(c.oggetto||'').toLowerCase().includes(qOgg))   return false;
+  const list = _clients.filter(c => {
+    if (q      && !((c.nome+' '+c.cognome).toLowerCase().includes(q) || (c.azienda||'').toLowerCase().includes(q) || (c.email||'').toLowerCase().includes(q))) return false;
+    if (qOgg   && !(c.oggetto||'').toLowerCase().includes(qOgg))  return false;
     if (qStatus && c.status !== qStatus) return false;
     return true;
   });
-  const el = document.getElementById('clientsList');
 
   if (!list.length) {
     el.innerHTML = `<div class="empty-state">
       <div class="empty-icon">📋</div>
-      <h3>${q ? 'Nessun risultato per "'+q+'"' : 'Nessun cliente trovato'}</h3>
-      <p>${q ? 'Prova con un altro termine di ricerca.' : 'Clicca il pulsante&nbsp;<strong>+</strong> per aggiungere il primo cliente.'}</p>
+      <h3>${q||qOgg||qStatus ? 'Nessun risultato per i filtri applicati' : 'Nessun cliente trovato'}</h3>
+      <p>${q||qOgg||qStatus ? 'Prova a modificare i filtri.' : 'Clicca il pulsante&nbsp;<strong>+</strong> per aggiungere il primo cliente.'}</p>
     </div>`;
     return;
   }
@@ -1304,35 +1334,32 @@ function openAdd() {
 document.getElementById('btnAdd').addEventListener('click', openAdd);
 document.getElementById('navCta').addEventListener('click', e => { e.preventDefault(); openAdd(); });
 
-document.getElementById('btnSaveAdd').addEventListener('click', () => {
+document.getElementById('btnSaveAdd').addEventListener('click', async () => {
   const nome    = document.getElementById('a-nome').value.trim();
   const cognome = document.getElementById('a-cognome').value.trim();
-  if (!nome || !cognome) {
-    toast('⚠️  Nome e Cognome sono obbligatori', true);
-    return;
-  }
-  const list = load() || [];
-  list.push({
-    id:       uid(),
-    nome, cognome,
+  if (!nome || !cognome) { toast('⚠️  Nome e Cognome sono obbligatori', true); return; }
+  const newC = {
+    id: uid(), nome, cognome,
     email:    document.getElementById('a-email').value.trim(),
     azienda:  document.getElementById('a-azienda').value.trim(),
     note:     document.getElementById('a-note').value.trim(),
     status:   'creato',
     data:     new Date().toISOString().split('T')[0],
-    oggetto:  '',
-    dettagli: ''
-  });
-  save(list);
-  closeModal('addModal');
-  render();
-  toast('✅  Cliente aggiunto con successo!');
+    oggetto:  '', dettagli: '', domande: []
+  };
+  try {
+    await sbInsert(newC);
+    closeModal('addModal');
+    await render();
+    toast('✅  Cliente aggiunto con successo!');
+  } catch(e) { toast('⚠️  Errore nel salvataggio', true); }
 });
 
 /* ── EDIT ────────────────────────────────── */
 function doEdit(id) {
-  const c = (load()||[]).find(x=>x.id===id);
+  const c = _clients.find(x=>x.id===id);
   if(!c) return;
+  _editDomande = JSON.parse(JSON.stringify(c.domande || []));
   document.getElementById('e-id').value       = id;
   document.getElementById('e-nome').value     = c.nome    || '';
   document.getElementById('e-cognome').value  = c.cognome || '';
@@ -1344,16 +1371,12 @@ function doEdit(id) {
   document.getElementById('e-dettagli').value = c.dettagli|| '';
   document.getElementById('e-note').value     = c.note    || '';
   openModal('editModal');
-  renderEditQ(id);
+  renderEditQ();
 }
 
-document.getElementById('btnSaveEdit').addEventListener('click', () => {
+document.getElementById('btnSaveEdit').addEventListener('click', async () => {
   const id   = document.getElementById('e-id').value;
-  const list = load() || [];
-  const idx  = list.findIndex(x=>x.id===id);
-  if(idx<0) return;
-  list[idx] = {
-    ...list[idx],
+  const data = {
     nome:     document.getElementById('e-nome').value.trim(),
     cognome:  document.getElementById('e-cognome').value.trim(),
     email:    document.getElementById('e-email').value.trim(),
@@ -1363,34 +1386,31 @@ document.getElementById('btnSaveEdit').addEventListener('click', () => {
     oggetto:  document.getElementById('e-oggetto').value.trim(),
     dettagli: document.getElementById('e-dettagli').value.trim(),
     note:     document.getElementById('e-note').value.trim(),
+    domande:  _editDomande
   };
-  save(list);
-  closeModal('editModal');
-  render();
-  toast('💾  Modifiche salvate con successo!');
+  try {
+    await sbUpdate(id, data);
+    closeModal('editModal');
+    await render();
+    toast('💾  Modifiche salvate con successo!');
+  } catch(e) { toast('⚠️  Errore nel salvataggio', true); }
 });
 
 /* ── VIEW ────────────────────────────────── */
-let _viewId = null;
-
 function doView(id) {
   _viewId = id;
-  const c = (load()||[]).find(x=>x.id===id);
+  const c = _clients.find(x=>x.id===id);
   if(!c) return;
   const set = (eid, val) => {
     const el = document.getElementById(eid);
     if(val) { el.textContent = val; el.classList.remove('empty-val'); }
-    else    { el.textContent = '—';  el.classList.add('empty-val'); }
+    else    { el.textContent = '—'; el.classList.add('empty-val'); }
   };
-  set('v-nome',    c.nome);
-  set('v-cognome', c.cognome);
-  set('v-email',   c.email);
-  set('v-azienda', c.azienda);
+  set('v-nome',    c.nome);     set('v-cognome', c.cognome);
+  set('v-email',   c.email);    set('v-azienda', c.azienda);
   set('v-status',  STATUS_LABEL[c.status]||c.status);
-  set('v-data',    c.data);
-  set('v-oggetto', c.oggetto);
-  set('v-dettagli',c.dettagli);
-  set('v-note',    c.note);
+  set('v-data',    c.data);     set('v-oggetto', c.oggetto);
+  set('v-dettagli',c.dettagli); set('v-note',    c.note);
   renderViewQ(id);
   openModal('viewModal');
 }
@@ -1401,45 +1421,41 @@ document.getElementById('btnToEdit').addEventListener('click', () => {
 });
 
 /* ── SEND ────────────────────────────────── */
-function doSend(id) {
+async function doSend(id) {
   if (!confirm('Segnare il form come "Inviato"?')) return;
-  const list = load() || [];
-  const c = list.find(x => x.id === id);
-  if (!c) return;
-  c.status = 'inviato';
-  save(list);
-  render();
-  toast('📤  Form inviato!');
+  try {
+    await sbUpdate(id, { status: 'inviato' });
+    await render();
+    toast('📤  Form inviato!');
+  } catch(e) { toast('⚠️  Errore nell\'invio', true); }
 }
 
 /* ── DUPLICATE ───────────────────────────── */
-function doDup(id) {
-  const c = (load() || []).find(x => x.id === id);
+async function doDup(id) {
+  const c = _clients.find(x => x.id === id);
   if (!c) return;
-  const list = load() || [];
   const newC = {
-    ...c,
-    id:       uid(),
-    status:   'creato',
+    ...c, id: uid(), status: 'creato',
     data:     new Date().toISOString().split('T')[0],
-    oggetto:  '',
-    dettagli: '',
+    oggetto:  '', dettagli: '',
     domande:  (c.domande || []).map(d => ({ ...d, risposta: '', completata: false }))
   };
-  list.push(newC);
-  save(list);
-  render();
-  doEdit(newC.id);
-  toast('📄  Form duplicato — modifica i dettagli.');
+  try {
+    await sbInsert(newC);
+    await render();
+    doEdit(newC.id);
+    toast('📄  Form duplicato — modifica i dettagli.');
+  } catch(e) { toast('⚠️  Errore nella duplicazione', true); }
 }
 
 /* ── DELETE ──────────────────────────────── */
-function doDel(id) {
+async function doDel(id) {
   if(!confirm('Sei sicuro di voler eliminare questo cliente?')) return;
-  const list = (load()||[]).filter(c=>c.id!==id);
-  save(list);
-  render();
-  toast('🗑️  Cliente eliminato.');
+  try {
+    await sbDelete(id);
+    await render();
+    toast('🗑️  Cliente eliminato.');
+  } catch(e) { toast('⚠️  Errore nell\'eliminazione', true); }
 }
 
 /* ══════════════════════════════════════════
@@ -1452,30 +1468,19 @@ function quid()  { return 'q' + Date.now() + Math.random().toString(36).slice(2,
 
 /* ── Banca domande ───────────────────────── */
 function renderQBank() {
-  const qs      = loadQ();
-  const clients = load() || [];
-  const el      = document.getElementById('questionsBankList');
-
+  const qs  = loadQ();
+  const el  = document.getElementById('questionsBankList');
   if (!qs.length) {
     el.innerHTML = '<p class="q-empty">Nessuna domanda ancora. Aggiungine una qui sotto.</p>';
     return;
   }
-
   el.innerHTML = qs.map(q => {
-    // clients that already have this question
-    const assigned = clients.filter(c => (c.domande||[]).some(d => d.qid === q.id));
+    const assigned    = _clients.filter(c => (c.domande||[]).some(d => d.qid === q.id));
     const assignedIds = assigned.map(c => c.id);
-    // clients not yet assigned
-    const available = clients.filter(c => !assignedIds.includes(c.id));
-
+    const available   = _clients.filter(c => !assignedIds.includes(c.id));
     const tagsHtml = assigned.length
-      ? assigned.map(c => `
-          <span class="q-client-tag">
-            ${esc(c.nome)} ${esc(c.cognome)}
-            <button title="Rimuovi" onclick="removeQFromClient('${q.id}','${c.id}')">✕</button>
-          </span>`).join('')
+      ? assigned.map(c => `<span class="q-client-tag">${esc(c.nome)} ${esc(c.cognome)}<button title="Rimuovi" onclick="removeQFromClient('${q.id}','${c.id}')">✕</button></span>`).join('')
       : '<span class="q-no-clients">Nessun cliente assegnato</span>';
-
     const pickerHtml = available.length
       ? `<div class="q-assign-client-row">
            <select class="fselect" id="qcp-${q.id}">
@@ -1485,7 +1490,6 @@ function renderQBank() {
            <button class="btn btn-pri" onclick="assignQToClient('${q.id}')">Assegna</button>
          </div>`
       : '<p class="q-no-clients" style="margin-top:6px;">Tutti i clienti sono già assegnati.</p>';
-
     return `<div class="q-item">
       <div class="q-item-header">
         <span class="q-text">${esc(q.testo)}</span>
@@ -1500,39 +1504,42 @@ function renderQBank() {
   }).join('');
 }
 
-function assignQToClient(qid) {
+async function assignQToClient(qid) {
   const clientId = document.getElementById('qcp-' + qid)?.value;
   if (!clientId) { toast('⚠️  Seleziona un cliente', true); return; }
-  const clients = load() || [];
-  const c = clients.find(x => x.id === clientId);
+  const c = _clients.find(x => x.id === clientId);
   if (!c) return;
-  if (!c.domande) c.domande = [];
-  if (!c.domande.some(d => d.qid === qid)) {
-    c.domande.push({ qid, risposta: '', completata: false });
-    save(clients);
+  const newDomande = [...(c.domande||[]), { qid, risposta: '', completata: false }];
+  try {
+    await sbUpdate(clientId, { domande: newDomande });
+    await render();
+    renderQBank();
     toast('✅  Domanda assegnata a ' + c.nome + ' ' + c.cognome);
-  }
-  renderQBank();
+  } catch(e) { toast('⚠️  Errore nell\'assegnazione', true); }
 }
 
-function removeQFromClient(qid, clientId) {
-  const clients = load() || [];
-  const c = clients.find(x => x.id === clientId);
+async function removeQFromClient(qid, clientId) {
+  const c = _clients.find(x => x.id === clientId);
   if (!c) return;
-  c.domande = (c.domande || []).filter(d => d.qid !== qid);
-  save(clients);
-  renderQBank();
-  toast('🗑️  Domanda rimossa dal cliente.');
+  const newDomande = (c.domande||[]).filter(d => d.qid !== qid);
+  try {
+    await sbUpdate(clientId, { domande: newDomande });
+    await render();
+    renderQBank();
+    toast('🗑️  Domanda rimossa dal cliente.');
+  } catch(e) { toast('⚠️  Errore nella rimozione', true); }
 }
 
-function delQ(id) {
+async function delQ(id) {
   if (!confirm('Eliminare questa domanda? Verrà rimossa anche da tutti i clienti.')) return;
   saveQ(loadQ().filter(q => q.id !== id));
-  const clients = load() || [];
-  clients.forEach(c => { if (c.domande) c.domande = c.domande.filter(d => d.qid !== id); });
-  save(clients);
-  renderQBank();
-  toast('🗑️  Domanda eliminata.');
+  const affected = _clients.filter(c => (c.domande||[]).some(d => d.qid === id));
+  try {
+    await Promise.all(affected.map(c => sbUpdate(c.id, { domande: (c.domande||[]).filter(d => d.qid !== id) })));
+    await render();
+    renderQBank();
+    toast('🗑️  Domanda eliminata.');
+  } catch(e) { toast('⚠️  Errore nell\'eliminazione', true); }
 }
 
 document.getElementById('btnAddQ').addEventListener('click', () => {
@@ -1557,90 +1564,64 @@ document.getElementById('navDomande').addEventListener('click', e => {
 });
 
 /* ── Domande nel modal Edit ──────────────── */
-function renderEditQ(clientId) {
-  const c       = (load() || []).find(x => x.id === clientId);
-  const qs      = loadQ();
-  const assigned = c?.domande || [];
+function renderEditQ() {
+  const qs       = loadQ();
+  const assigned = _editDomande;
+  const listEl   = document.getElementById('editQList');
 
-  const listEl = document.getElementById('editQList');
-  if (!assigned.length) {
-    listEl.innerHTML = '<p class="q-empty">Nessuna domanda assegnata. Aggiungine una qui sotto.</p>';
-  } else {
-    listEl.innerHTML = assigned.map((d, i) => {
-      const q = qs.find(x => x.id === d.qid);
-      if (!q) return '';
-      return `<div class="q-client-item" data-qid="${d.qid}">
-        <div class="q-client-header">
-          <span class="q-num">${i + 1}.</span>
-          <span class="q-text">${esc(q.testo)}</span>
-          <button class="action-btn btn-delete q-remove" title="Rimuovi" onclick="removeEditQ('${d.qid}')">✕</button>
-        </div>
-        <textarea class="ftextarea q-answer" placeholder="Risposta…"
-          oninput="updateEditQAnswer('${d.qid}', this.value)">${esc(d.risposta || '')}</textarea>
-        <label class="q-check-label">
-          <input type="checkbox" class="q-checkbox" ${d.completata ? 'checked' : ''}
-            onchange="updateEditQCheck('${d.qid}', this.checked)">
-          Completata
-        </label>
-      </div>`;
-    }).join('');
-  }
+  listEl.innerHTML = assigned.length
+    ? assigned.map((d, i) => {
+        const q = qs.find(x => x.id === d.qid);
+        if (!q) return '';
+        return `<div class="q-client-item" data-qid="${d.qid}">
+          <div class="q-client-header">
+            <span class="q-num">${i+1}.</span>
+            <span class="q-text">${esc(q.testo)}</span>
+            <button class="action-btn btn-delete q-remove" title="Rimuovi" onclick="removeEditQ('${d.qid}')">✕</button>
+          </div>
+          <textarea class="ftextarea q-answer" placeholder="Risposta…"
+            oninput="updateEditQAnswer('${d.qid}', this.value)">${esc(d.risposta||'')}</textarea>
+          <label class="q-check-label">
+            <input type="checkbox" class="q-checkbox" ${d.completata?'checked':''}
+              onchange="updateEditQCheck('${d.qid}', this.checked)">
+            Completata
+          </label>
+        </div>`;
+      }).join('')
+    : '<p class="q-empty">Nessuna domanda assegnata. Aggiungine una qui sotto.</p>';
 
   const assignedIds = assigned.map(d => d.qid);
-  const available   = qs.filter(q => !assignedIds.includes(q.id));
   const picker      = document.getElementById('qPicker');
   picker.innerHTML  = '<option value="">— Seleziona domanda da aggiungere —</option>' +
-    available.map(q => `<option value="${q.id}">${esc(q.testo)}</option>`).join('');
+    qs.filter(q => !assignedIds.includes(q.id)).map(q => `<option value="${q.id}">${esc(q.testo)}</option>`).join('');
 }
 
 function removeEditQ(qid) {
-  const id      = document.getElementById('e-id').value;
-  const clients = load() || [];
-  const idx     = clients.findIndex(x => x.id === id);
-  if (idx < 0) return;
-  clients[idx].domande = (clients[idx].domande || []).filter(d => d.qid !== qid);
-  save(clients);
-  renderEditQ(id);
+  _editDomande = _editDomande.filter(d => d.qid !== qid);
+  renderEditQ();
 }
-
 function updateEditQAnswer(qid, val) {
-  const id      = document.getElementById('e-id').value;
-  const clients = load() || [];
-  const c       = clients.find(x => x.id === id);
-  if (!c) return;
-  const d = (c.domande || []).find(x => x.qid === qid);
-  if (d) { d.risposta = val; save(clients); }
+  const d = _editDomande.find(x => x.qid === qid);
+  if (d) d.risposta = val;
 }
-
 function updateEditQCheck(qid, val) {
-  const id      = document.getElementById('e-id').value;
-  const clients = load() || [];
-  const c       = clients.find(x => x.id === id);
-  if (!c) return;
-  const d = (c.domande || []).find(x => x.qid === qid);
-  if (d) { d.completata = val; save(clients); }
+  const d = _editDomande.find(x => x.qid === qid);
+  if (d) d.completata = val;
 }
 
 document.getElementById('btnAssignQ').addEventListener('click', () => {
-  const id  = document.getElementById('e-id').value;
   const qid = document.getElementById('qPicker').value;
   if (!qid) { toast('⚠️  Seleziona una domanda dalla lista', true); return; }
-  const clients = load() || [];
-  const c = clients.find(x => x.id === id);
-  if (!c) return;
-  if (!c.domande) c.domande = [];
-  c.domande.push({ qid, risposta: '', completata: false });
-  save(clients);
-  renderEditQ(id);
+  _editDomande.push({ qid, risposta: '', completata: false });
+  renderEditQ();
 });
 
 /* ── Domande nel modal View ──────────────── */
 function renderViewQ(clientId) {
-  const c       = (load() || []).find(x => x.id === clientId);
-  const qs      = loadQ();
+  const c        = _clients.find(x => x.id === clientId);
+  const qs       = loadQ();
   const assigned = c?.domande || [];
-  const el      = document.getElementById('viewQList');
-
+  const el       = document.getElementById('viewQList');
   if (!assigned.length) {
     el.innerHTML = '<p class="q-empty">Nessuna domanda assegnata a questo cliente.</p>';
     return;
@@ -1650,7 +1631,7 @@ function renderViewQ(clientId) {
     if (!q) return '';
     return `<div class="q-view-item">
       <div class="q-view-header">
-        <span class="q-num">${i + 1}.</span>
+        <span class="q-num">${i+1}.</span>
         <span class="q-text">${esc(q.testo)}</span>
         ${d.completata ? '<span class="q-done-badge">✓ Completata</span>' : ''}
       </div>
@@ -1667,7 +1648,6 @@ function checkAuth() {
     document.getElementById('loginScreen').classList.add('hidden');
   }
 }
-
 function doLogin() {
   const user = document.getElementById('loginUser').value.trim();
   const pass = document.getElementById('loginPass').value;
@@ -1682,11 +1662,9 @@ function doLogin() {
     document.getElementById('loginPass').focus();
   }
 }
-
 document.getElementById('loginBtn').addEventListener('click', doLogin);
 document.getElementById('loginPass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 document.getElementById('loginUser').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('loginPass').focus(); });
-
 document.getElementById('navLogout').addEventListener('click', e => {
   e.preventDefault();
   sessionStorage.removeItem(SESSION_KEY);
@@ -1699,7 +1677,6 @@ document.getElementById('navLogout').addEventListener('click', e => {
 
 /* ── INIT ────────────────────────────────── */
 checkAuth();
-boot();
 render();
 document.getElementById('clientSearch').addEventListener('input', render);
 document.getElementById('oggettoSearch').addEventListener('input', render);
