@@ -1161,7 +1161,29 @@ const SB_HDR = {
   'Content-Type':  'application/json'
 };
 
-const SB_TABLE = 'unite-forms';
+const SB_TABLE   = 'unite-forms';
+const SB_TABLE_Q = 'unite-questions';
+
+async function sbGetQ() {
+  const r = await fetch(`${SB_URL}/${SB_TABLE_Q}`, { headers: SB_HDR });
+  if (!r.ok) throw new Error(await r.text());
+  return (await r.json()).map(r => ({ id: r.ID, testo: r.TESTO }));
+}
+async function sbInsertQ(data) {
+  const r = await fetch(`${SB_URL}/${SB_TABLE_Q}`, {
+    method: 'POST',
+    headers: { ...SB_HDR, 'Prefer': 'return=minimal' },
+    body: JSON.stringify({ ID: data.id, TESTO: data.testo })
+  });
+  if (!r.ok) throw new Error(await r.text());
+}
+async function sbDeleteQ(id) {
+  const r = await fetch(`${SB_URL}/${SB_TABLE_Q}?ID=eq.${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    headers: SB_HDR
+  });
+  if (!r.ok) throw new Error(await r.text());
+}
 
 /* Supabase usa colonne MAIUSCOLE — questi due mapper isolano la differenza */
 function mapFrom(r) {
@@ -1483,14 +1505,18 @@ async function doDel(id) {
 /* ══════════════════════════════════════════
    DOMANDE
    ══════════════════════════════════════════ */
-const QKEY = 'unite_questions';
-function loadQ() { return JSON.parse(localStorage.getItem(QKEY) || '[]'); }
-function saveQ(d) { localStorage.setItem(QKEY, JSON.stringify(d)); }
-function quid()  { return 'q' + Date.now() + Math.random().toString(36).slice(2,5); }
+let _questions = [];
+function quid() { return 'q' + Date.now() + Math.random().toString(36).slice(2,5); }
+
+async function refreshQuestions() {
+  try { _questions = await sbGetQ(); }
+  catch(e) { toast('⚠️  Errore caricamento domande', true); }
+}
 
 /* ── Banca domande ───────────────────────── */
-function renderQBank() {
-  const qs  = loadQ();
+async function renderQBank() {
+  await refreshQuestions();
+  const qs  = _questions;
   const el  = document.getElementById('questionsBankList');
   if (!qs.length) {
     el.innerHTML = '<p class="q-empty">Nessuna domanda ancora. Aggiungine una qui sotto.</p>';
@@ -1531,13 +1557,13 @@ async function assignQToClient(qid) {
   if (!clientId) { toast('⚠️  Seleziona un cliente', true); return; }
   const c = _clients.find(x => x.id === clientId);
   if (!c) return;
-  const q = loadQ().find(x => x.id === qid);
+  const q = _questions.find(x => x.id === qid);
   if (!q) return;
   const newDomande = [...(c.domande||[]), { testo: q.testo, risposta: '', completata: false }];
   try {
     await sbUpdate(clientId, { domande: newDomande });
     await render();
-    renderQBank();
+    await renderQBank();
     toast('✅  Domanda assegnata a ' + c.nome + ' ' + c.cognome);
   } catch(e) { toast('⚠️  Errore nell\'assegnazione', true); }
 }
@@ -1545,56 +1571,55 @@ async function assignQToClient(qid) {
 async function removeQFromClient(qid, clientId) {
   const c = _clients.find(x => x.id === clientId);
   if (!c) return;
-  const q = loadQ().find(x => x.id === qid);
+  const q = _questions.find(x => x.id === qid);
   const testo = q?.testo;
   const newDomande = (c.domande||[]).filter(d => d.testo !== testo);
   try {
     await sbUpdate(clientId, { domande: newDomande });
     await render();
-    renderQBank();
+    await renderQBank();
     toast('🗑️  Domanda rimossa dal cliente.');
   } catch(e) { toast('⚠️  Errore nella rimozione', true); }
 }
 
 async function delQ(id) {
   if (!confirm('Eliminare questa domanda? Verrà rimossa anche da tutti i clienti.')) return;
-  const qs = loadQ();
-  const q  = qs.find(x => x.id === id);
-  saveQ(qs.filter(x => x.id !== id));
-  const testo    = q?.testo;
+  const q     = _questions.find(x => x.id === id);
+  const testo = q?.testo;
   const affected = _clients.filter(c => (c.domande||[]).some(d => d.testo === testo));
   try {
+    await sbDeleteQ(id);
     await Promise.all(affected.map(c => sbUpdate(c.id, { domande: (c.domande||[]).filter(d => d.testo !== testo) })));
     await render();
-    renderQBank();
+    await renderQBank();
     toast('🗑️  Domanda eliminata.');
   } catch(e) { toast('⚠️  Errore nell\'eliminazione', true); }
 }
 
-document.getElementById('btnAddQ').addEventListener('click', () => {
+document.getElementById('btnAddQ').addEventListener('click', async () => {
   const text = document.getElementById('newQText').value.trim();
   if (!text) { toast('⚠️  Inserisci il testo della domanda', true); return; }
-  const qs = loadQ();
-  qs.push({ id: quid(), testo: text });
-  saveQ(qs);
-  document.getElementById('newQText').value = '';
-  renderQBank();
-  toast('✅  Domanda aggiunta!');
+  try {
+    await sbInsertQ({ id: quid(), testo: text });
+    document.getElementById('newQText').value = '';
+    await renderQBank();
+    toast('✅  Domanda aggiunta!');
+  } catch(e) { toast('⚠️  Errore nel salvataggio della domanda', true); }
 });
 
 document.getElementById('newQText').addEventListener('keydown', e => {
   if (e.key === 'Enter') document.getElementById('btnAddQ').click();
 });
 
-document.getElementById('navDomande').addEventListener('click', e => {
+document.getElementById('navDomande').addEventListener('click', async e => {
   e.preventDefault();
-  renderQBank();
+  await renderQBank();
   openModal('questionsModal');
 });
 
 /* ── Domande nel modal Edit ──────────────── */
 function renderEditQ() {
-  const qs             = loadQ();
+  const qs             = _questions;
   const assigned       = _editDomande;
   const listEl         = document.getElementById('editQList');
   const assignedTestos = assigned.map(d => d.testo);
@@ -1636,7 +1661,7 @@ function updateEditQCheck(idx, val) {
 document.getElementById('btnAssignQ').addEventListener('click', () => {
   const qid = document.getElementById('qPicker').value;
   if (!qid) { toast('⚠️  Seleziona una domanda dalla lista', true); return; }
-  const q = loadQ().find(x => x.id === qid);
+  const q = _questions.find(x => x.id === qid);
   if (!q) return;
   _editDomande.push({ testo: q.testo, risposta: '', completata: false });
   renderEditQ();
@@ -1699,6 +1724,7 @@ document.getElementById('navLogout').addEventListener('click', e => {
 /* ── INIT ────────────────────────────────── */
 checkAuth();
 render();
+refreshQuestions();
 document.getElementById('clientSearch').addEventListener('input', render);
 document.getElementById('oggettoSearch').addEventListener('input', render);
 document.getElementById('statusFilter').addEventListener('change', render);
