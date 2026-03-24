@@ -1163,29 +1163,49 @@ const SB_HDR = {
 
 const SB_TABLE = 'unite-forms';
 
+/* Supabase usa colonne MAIUSCOLE — questi due mapper isolano la differenza */
+function mapFrom(r) {
+  return {
+    id: r.ID, nome: r.NOME, cognome: r.COGNOME, email: r.EMAIL,
+    azienda: r.AZIENDA, status: r.STATUS, data: r.DATA,
+    oggetto: r.OGGETTO, dettagli: r.DETTAGLI, note: r.NOTE,
+    domande: r.DOMANDE || []
+  };
+}
+function mapTo(d) {
+  const r = {};
+  const map = { id:'ID', nome:'NOME', cognome:'COGNOME', email:'EMAIL',
+                azienda:'AZIENDA', status:'STATUS', data:'DATA',
+                oggetto:'OGGETTO', dettagli:'DETTAGLI', note:'NOTE', domande:'DOMANDE' };
+  for (const [k, K] of Object.entries(map)) {
+    if (d[k] !== undefined) r[K] = d[k];
+  }
+  return r;
+}
+
 async function sbGet() {
-  const r = await fetch(`${SB_URL}/${SB_TABLE}?order=data.desc`, { headers: SB_HDR });
+  const r = await fetch(`${SB_URL}/${SB_TABLE}?order=DATA.desc`, { headers: SB_HDR });
   if (!r.ok) throw new Error(await r.text());
-  return r.json();
+  return (await r.json()).map(mapFrom);
 }
 async function sbInsert(data) {
   const r = await fetch(`${SB_URL}/${SB_TABLE}`, {
     method: 'POST',
     headers: { ...SB_HDR, 'Prefer': 'return=minimal' },
-    body: JSON.stringify(data)
+    body: JSON.stringify(mapTo(data))
   });
   if (!r.ok) throw new Error(await r.text());
 }
 async function sbUpdate(id, data) {
-  const r = await fetch(`${SB_URL}/${SB_TABLE}?id=eq.${encodeURIComponent(id)}`, {
+  const r = await fetch(`${SB_URL}/${SB_TABLE}?ID=eq.${encodeURIComponent(id)}`, {
     method: 'PATCH',
     headers: { ...SB_HDR, 'Prefer': 'return=minimal' },
-    body: JSON.stringify(data)
+    body: JSON.stringify(mapTo(data))
   });
   if (!r.ok) throw new Error(await r.text());
 }
 async function sbDelete(id) {
-  const r = await fetch(`${SB_URL}/${SB_TABLE}?id=eq.${encodeURIComponent(id)}`, {
+  const r = await fetch(`${SB_URL}/${SB_TABLE}?ID=eq.${encodeURIComponent(id)}`, {
     method: 'DELETE',
     headers: SB_HDR
   });
