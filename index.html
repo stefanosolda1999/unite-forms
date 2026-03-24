@@ -1,0 +1,1554 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UNITE! — Gestione Form Clienti</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:      #1a1a2e;
+      --navy-mid:  #16213e;
+      --navy-deep: #0f3460;
+      --cyan:      #00aacc;
+      --cyan-dark: #0099bb;
+      --bg:        #f4f6f8;
+      --white:     #ffffff;
+      --text:      #1e293b;
+      --muted:     #64748b;
+      --border:    #e2e8f0;
+    }
+
+    body {
+      font-family: 'Barlow', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ─── NAVBAR ─────────────────────────────────────────── */
+    .navbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    }
+    .navbar-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 28px;
+      height: 66px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .logo {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 30px;
+      font-weight: 800;
+      color: var(--navy);
+      letter-spacing: 1px;
+      text-decoration: none;
+      user-select: none;
+    }
+    .logo .excl { color: var(--cyan); }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 30px;
+      list-style: none;
+    }
+    .nav-links a {
+      font-weight: 500;
+      font-size: 15px;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.18s;
+    }
+    .nav-links a:hover { color: var(--cyan); }
+    .nav-cta {
+      background: var(--cyan) !important;
+      color: var(--white) !important;
+      padding: 9px 22px;
+      border-radius: 7px;
+      font-weight: 600 !important;
+      transition: background 0.18s, transform 0.12s !important;
+      cursor: pointer;
+    }
+    .nav-cta:hover {
+      background: var(--cyan-dark) !important;
+      transform: translateY(-1px);
+    }
+
+    /* ─── HERO ───────────────────────────────────────────── */
+    .hero {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 50%, var(--navy-deep) 100%);
+      padding: 52px 28px;
+    }
+    .hero-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 48px;
+      flex-wrap: wrap;
+    }
+    .hero-text h1 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 44px;
+      font-weight: 800;
+      color: var(--white);
+      letter-spacing: 0.5px;
+      line-height: 1.1;
+      margin-bottom: 10px;
+    }
+    .hero-text h1 .hl { color: var(--cyan); }
+    .hero-text p {
+      color: rgba(255,255,255,0.55);
+      font-size: 16px;
+      max-width: 380px;
+    }
+    .stats-row {
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+    .stat-card {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.11);
+      border-radius: 14px;
+      padding: 22px 30px;
+      text-align: center;
+      min-width: 112px;
+      backdrop-filter: blur(4px);
+      transition: background 0.2s;
+    }
+    .stat-card:hover { background: rgba(255,255,255,0.12); }
+    .stat-number {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 44px;
+      font-weight: 700;
+      color: var(--cyan);
+      line-height: 1;
+      display: block;
+      transition: transform 0.2s;
+    }
+    .stat-number.bump { transform: scale(1.25); }
+    .stat-label {
+      font-size: 11px;
+      color: rgba(255,255,255,0.45);
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      margin-top: 6px;
+    }
+
+    /* ─── MAIN ───────────────────────────────────────────── */
+    .main {
+      flex: 1;
+      max-width: 1200px;
+      margin: 36px auto;
+      padding: 0 28px;
+      width: 100%;
+    }
+
+    /* ─── TABLE CARD ─────────────────────────────────────── */
+    .table-card {
+      background: var(--white);
+      border-radius: 18px;
+      box-shadow: 0 4px 28px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+    .table-card-header {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%);
+      border-bottom: 3px solid var(--cyan);
+      padding: 22px 30px;
+    }
+    .table-card-header h2 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--white);
+      letter-spacing: 0.5px;
+    }
+    .table-card-header p {
+      font-size: 13px;
+      color: rgba(255,255,255,0.45);
+      margin-top: 3px;
+    }
+    .col-headers {
+      display: grid;
+      grid-template-columns: 1fr 1fr 190px 148px;
+      padding: 12px 30px;
+      background: #f8fafc;
+      border-bottom: 1px solid var(--border);
+    }
+    .col-hdr {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.1px;
+      color: var(--muted);
+    }
+    .col-hdr.right { text-align: right; }
+
+    /* ─── QUESTIONS ──────────────────────────────────────── */
+    .q-item {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 10px;
+      background: var(--white);
+      overflow: hidden;
+    }
+    .q-item-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 14px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .q-item-header .q-text { flex: 1; font-size: 14px; font-weight: 500; color: var(--text); }
+    .q-item-body { padding: 12px 14px; }
+    .q-clients-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .q-client-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 10px;
+      min-height: 24px;
+    }
+    .q-client-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: #e0f2fe;
+      color: #0369a1;
+      border-radius: 999px;
+      padding: 3px 10px 3px 10px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .q-client-tag button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #0369a1;
+      font-size: 11px;
+      padding: 0;
+      line-height: 1;
+      opacity: 0.7;
+    }
+    .q-client-tag button:hover { opacity: 1; }
+    .q-no-clients { font-size: 13px; color: var(--muted); font-style: italic; }
+    .q-assign-client-row { display: flex; gap: 8px; margin-top: 4px; }
+    .q-assign-client-row .fselect { flex: 1; font-size: 13px; padding: 6px 10px; }
+    .q-assign-client-row .btn { padding: 6px 14px; font-size: 13px; }
+    .q-add-row { display: flex; gap: 10px; margin-top: 12px; }
+    .q-add-row .finput { flex: 1; }
+    .q-empty { color: var(--muted); font-size: 14px; padding: 10px 0; }
+
+    .q-client-item {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 12px;
+      background: var(--bg);
+    }
+    .q-client-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .q-num { font-weight: 700; color: var(--cyan); font-size: 13px; min-width: 20px; }
+    .q-client-header .q-text { flex: 1; font-size: 14px; font-weight: 500; }
+    .q-remove { margin-left: auto; font-size: 11px; padding: 2px 8px; flex-shrink: 0; }
+    .q-answer { min-height: 60px; margin-bottom: 8px; }
+    .q-check-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--muted);
+      cursor: pointer;
+      user-select: none;
+    }
+    .q-checkbox { accent-color: var(--cyan); width: 15px; height: 15px; cursor: pointer; }
+    .q-assign-row { display: flex; gap: 10px; margin-top: 14px; }
+    .q-assign-row .fselect { flex: 1; }
+
+    .q-view-item {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 10px;
+      background: var(--bg);
+    }
+    .q-view-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .q-view-header .q-text { flex: 1; font-size: 14px; font-weight: 500; }
+    .q-done-badge {
+      background: #dcfce7;
+      color: #16a34a;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 9px;
+      border-radius: 20px;
+      flex-shrink: 0;
+    }
+
+    /* ─── SEARCH ─────────────────────────────────────────── */
+    .search-bar {
+      padding: 14px 30px 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .search-input-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 160px;
+      max-width: 300px;
+    }
+    .filter-select {
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: 'Barlow', sans-serif;
+      font-size: 14px;
+      color: var(--text);
+      background: var(--white);
+      outline: none;
+      cursor: pointer;
+      transition: border-color 0.18s, box-shadow 0.18s;
+      min-width: 150px;
+    }
+    .filter-select:focus {
+      border-color: var(--cyan);
+      box-shadow: 0 0 0 3px rgba(0,170,204,0.12);
+    }
+    .filter-select.active { border-color: var(--cyan); color: var(--cyan); font-weight: 600; }
+    .search-input-wrap svg {
+      position: absolute;
+      left: 11px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      pointer-events: none;
+    }
+    .search-input {
+      width: 100%;
+      padding: 8px 12px 8px 34px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: 'Barlow', sans-serif;
+      font-size: 14px;
+      color: var(--text);
+      background: var(--white);
+      outline: none;
+      transition: border-color 0.18s, box-shadow 0.18s;
+    }
+    .search-input:focus {
+      border-color: var(--cyan);
+      box-shadow: 0 0 0 3px rgba(0,170,204,0.12);
+    }
+    .search-input::placeholder { color: var(--muted); }
+
+    /* ─── CLIENT ROWS ────────────────────────────────────── */
+    .clients-list { padding: 6px 0; }
+    .client-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 190px 148px;
+      align-items: center;
+      padding: 14px 30px;
+      border-bottom: 1px solid #f1f5f9;
+      opacity: 0;
+      transform: translateY(10px);
+      animation: rowIn 0.32s ease forwards;
+      transition: background 0.15s;
+    }
+    .client-row:last-child { border-bottom: none; }
+    .client-row:hover { background: #f8fafc; }
+    @keyframes rowIn {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Avatar */
+    .client-info { display: flex; align-items: center; gap: 14px; }
+    .avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700;
+      font-size: 14px;
+      color: #fff;
+      flex-shrink: 0;
+      letter-spacing: 0.5px;
+    }
+    .client-name { font-weight: 600; font-size: 15px; color: var(--text); }
+    .client-company { font-size: 13px; color: var(--muted); margin-top: 2px; }
+    .client-subject {
+      font-size: 14px;
+      color: var(--text);
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding-right: 12px;
+    }
+    .client-subject.empty { color: var(--muted); font-style: italic; font-weight: 400; }
+
+    /* Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 14px;
+      border-radius: 999px;
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+    }
+    .badge-creato      { background: #f1f5f9; color: #64748b; }
+    .badge-inmodifica  { background: #fef3c7; color: #b45309; }
+    .badge-inviato     { background: #dbeafe; color: #1d4ed8; }
+    .badge-risposto    { background: #d1fae5; color: #047857; }
+
+    /* Action buttons */
+    .actions { display: flex; justify-content: flex-end; gap: 6px; }
+    .action-btn {
+      width: 35px;
+      height: 35px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      background: transparent;
+      transition: background 0.15s, transform 0.12s;
+    }
+    .action-btn:hover { transform: scale(1.12); }
+    .btn-edit:hover   { background: #fef9c3; }
+    .btn-view:hover   { background: #dbeafe; }
+    .btn-delete:hover { background: #fee2e2; }
+
+    /* Add button */
+    .table-footer {
+      padding: 16px 30px;
+      display: flex;
+      justify-content: flex-end;
+      border-top: 1px solid var(--border);
+    }
+    .btn-add {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: #10b981;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      font-size: 26px;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 14px rgba(16,185,129,0.35);
+      transition: background 0.2s, box-shadow 0.2s, transform 0.25s;
+    }
+    .btn-add:hover {
+      background: #059669;
+      box-shadow: 0 6px 18px rgba(16,185,129,0.45);
+      transform: rotate(90deg) scale(1.08);
+    }
+
+    /* Empty state */
+    .empty-state {
+      padding: 64px 30px;
+      text-align: center;
+    }
+    .empty-icon { font-size: 52px; margin-bottom: 18px; }
+    .empty-state h3 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    .empty-state p { color: var(--muted); font-size: 14px; }
+
+    /* ─── MODALS ─────────────────────────────────────────── */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.52);
+      backdrop-filter: blur(5px);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.22s ease;
+    }
+    .overlay.active { opacity: 1; pointer-events: all; }
+
+    .modal {
+      background: var(--white);
+      border-radius: 18px;
+      width: 100%;
+      max-width: 580px;
+      max-height: 92vh;
+      overflow-y: auto;
+      box-shadow: 0 28px 80px rgba(0,0,0,0.32);
+      transform: scale(0.93) translateY(10px);
+      transition: transform 0.22s ease;
+    }
+    .overlay.active .modal { transform: scale(1) translateY(0); }
+
+    .modal-head {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%);
+      border-bottom: 3px solid var(--cyan);
+      padding: 20px 26px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    .modal-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--white);
+      letter-spacing: 0.3px;
+    }
+    .modal-x {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      cursor: pointer;
+      font-size: 17px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.18s;
+    }
+    .modal-x:hover { background: rgba(255,255,255,0.22); }
+
+    .modal-body { padding: 26px; }
+
+    .section-lbl {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.1px;
+      color: var(--muted);
+      margin-bottom: 16px;
+      padding-bottom: 9px;
+      border-bottom: 1px solid var(--border);
+    }
+    .modal-section { margin-bottom: 26px; }
+    .modal-section:last-child { margin-bottom: 0; }
+
+    .frow { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .fg { margin-bottom: 14px; }
+    .fg:last-child { margin-bottom: 0; }
+    .flabel {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      display: block;
+      margin-bottom: 6px;
+    }
+    .flabel .req { color: var(--cyan); }
+
+    .finput, .fselect, .ftextarea {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 9px;
+      font-family: 'Barlow', sans-serif;
+      font-size: 14px;
+      color: var(--text);
+      background: var(--white);
+      outline: none;
+      transition: border-color 0.18s, box-shadow 0.18s;
+    }
+    .finput:focus, .fselect:focus, .ftextarea:focus {
+      border-color: var(--cyan);
+      box-shadow: 0 0 0 3px rgba(0,170,204,0.13);
+    }
+    .ftextarea { resize: vertical; min-height: 92px; }
+
+    /* View-mode fields */
+    .vfield {
+      padding: 10px 14px;
+      background: #f8fafc;
+      border: 1.5px solid var(--border);
+      border-radius: 9px;
+      font-size: 14px;
+      color: var(--text);
+      min-height: 41px;
+    }
+    .vfield.empty-val { color: var(--muted); font-style: italic; }
+
+    /* Modal footer */
+    .modal-foot {
+      padding: 16px 26px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      border-top: 1px solid var(--border);
+    }
+    .btn {
+      padding: 10px 24px;
+      border-radius: 9px;
+      font-family: 'Barlow', sans-serif;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s;
+    }
+    .btn-sec  { background: #f1f5f9; color: var(--muted); border: 1.5px solid var(--border); }
+    .btn-sec:hover  { background: var(--border); }
+    .btn-pri  { background: var(--cyan); color: #fff; }
+    .btn-pri:hover  { background: var(--cyan-dark); transform: translateY(-1px); }
+    .btn-suc  { background: #10b981; color: #fff; }
+    .btn-suc:hover  { background: #059669; transform: translateY(-1px); }
+
+    /* ─── TOAST ──────────────────────────────────────────── */
+    #toasts {
+      position: fixed;
+      bottom: 26px;
+      right: 26px;
+      z-index: 400;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+      pointer-events: none;
+    }
+    .toast {
+      background: #1e293b;
+      color: #fff;
+      border-left: 4px solid var(--cyan);
+      border-radius: 9px;
+      padding: 14px 18px;
+      font-size: 14px;
+      font-weight: 500;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.22);
+      min-width: 240px;
+      max-width: 320px;
+      animation: toastIn 0.28s ease;
+      pointer-events: all;
+    }
+    .toast.warn { border-left-color: #f59e0b; }
+    @keyframes toastIn {
+      from { transform: translateX(110%); opacity: 0; }
+      to   { transform: translateX(0);   opacity: 1; }
+    }
+    .toast.out { animation: toastOut 0.28s ease forwards; }
+    @keyframes toastOut {
+      to { transform: translateX(110%); opacity: 0; }
+    }
+
+    /* ─── FOOTER ─────────────────────────────────────────── */
+    footer {
+      background: var(--navy);
+      color: rgba(255,255,255,0.5);
+      padding: 36px 28px;
+      margin-top: auto;
+    }
+    .footer-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .footer-logo {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 24px;
+      font-weight: 800;
+      color: #fff;
+    }
+    .footer-logo .excl { color: var(--cyan); }
+    .footer-tagline { font-size: 13px; margin-top: 4px; }
+    .footer-contact { font-size: 14px; text-align: right; line-height: 1.8; }
+    .footer-contact a { color: var(--cyan); text-decoration: none; }
+    .footer-contact a:hover { text-decoration: underline; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<!-- ╔══════════════ NAVBAR ══════════════╗ -->
+<nav class="navbar">
+  <div class="navbar-inner">
+    <a class="logo" href="#">UNITE<span class="excl">!</span></a>
+    <ul class="nav-links">
+      <li><a href="#">Dashboard</a></li>
+      <li><a href="#">Clienti</a></li>
+      <li><a href="#">Report</a></li>
+      <li><a href="#" id="navDomande">Domande</a></li>
+      <li><a href="#" class="nav-cta" id="navCta">Nuovo Cliente</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- ╔══════════════ HERO ══════════════╗ -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-text">
+      <h1>Gestione <span class="hl">Form Clienti</span></h1>
+      <p>Monitora, invia e traccia i form dei tuoi clienti in un unico posto.</p>
+    </div>
+    <div class="stats-row">
+      <div class="stat-card">
+        <span class="stat-number" id="statTotal">0</span>
+        <div class="stat-label">Totale</div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-number" id="statSent">0</span>
+        <div class="stat-label">Inviati</div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-number" id="statReplied">0</span>
+        <div class="stat-label">Risposti</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ╔══════════════ MAIN ══════════════╗ -->
+<main class="main">
+  <div class="table-card">
+    <div class="table-card-header">
+      <h2>Lista Clienti</h2>
+      <p>Gestisci e monitora lo stato dei form inviati</p>
+    </div>
+    <div class="search-bar">
+      <div class="search-input-wrap">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" id="clientSearch" class="search-input" placeholder="Cerca cliente, azienda…">
+      </div>
+      <div class="search-input-wrap">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" id="oggettoSearch" class="search-input" placeholder="Cerca oggetto…">
+      </div>
+      <select id="statusFilter" class="filter-select">
+        <option value="">Tutti gli status</option>
+        <option value="creato">Creato</option>
+        <option value="in modifica">In Modifica</option>
+        <option value="inviato">Inviato</option>
+        <option value="risposto">Risposto</option>
+      </select>
+    </div>
+    <div class="col-headers">
+      <div class="col-hdr">Cliente</div>
+      <div class="col-hdr">Oggetto</div>
+      <div class="col-hdr">Status</div>
+      <div class="col-hdr right">Azioni</div>
+    </div>
+    <div class="clients-list" id="clientsList"></div>
+    <div class="table-footer">
+      <button class="btn-add" id="btnAdd" title="Aggiungi cliente">+</button>
+    </div>
+  </div>
+</main>
+
+<!-- ╔══════════════ FOOTER ══════════════╗ -->
+<footer>
+  <div class="footer-inner">
+    <div>
+      <div class="footer-logo">UNITE<span class="excl">!</span></div>
+      <div class="footer-tagline">Partner Solutions &amp; Strategy</div>
+    </div>
+    <div class="footer-contact">
+      <div>Email: <a href="mailto:info@unitepartners.com">info@unitepartners.com</a></div>
+      <div>Tel: +39 02 1234 5678</div>
+    </div>
+  </div>
+</footer>
+
+<!-- ╔══════════ MODAL: ADD ══════════╗ -->
+<div class="overlay" id="addModal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title">Nuovo Cliente</span>
+      <button class="modal-x" data-close="addModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-section">
+        <div class="section-lbl">Dati Anagrafici</div>
+        <div class="frow">
+          <div class="fg">
+            <label class="flabel">Nome <span class="req">*</span></label>
+            <input type="text" class="finput" id="a-nome" placeholder="Mario" autocomplete="off">
+          </div>
+          <div class="fg">
+            <label class="flabel">Cognome <span class="req">*</span></label>
+            <input type="text" class="finput" id="a-cognome" placeholder="Rossi" autocomplete="off">
+          </div>
+        </div>
+        <div class="fg">
+          <label class="flabel">Email</label>
+          <input type="email" class="finput" id="a-email" placeholder="mario.rossi@azienda.com">
+        </div>
+        <div class="fg">
+          <label class="flabel">Azienda</label>
+          <input type="text" class="finput" id="a-azienda" placeholder="Nome Azienda S.r.l.">
+        </div>
+        <div class="fg">
+          <label class="flabel">Note</label>
+          <textarea class="ftextarea" id="a-note" placeholder="Note aggiuntive..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-sec" data-close="addModal">Annulla</button>
+      <button class="btn btn-pri" id="btnSaveAdd">Aggiungi Cliente</button>
+    </div>
+  </div>
+</div>
+
+<!-- ╔══════════ MODAL: EDIT ══════════╗ -->
+<div class="overlay" id="editModal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title">✏️ Modifica Form</span>
+      <button class="modal-x" data-close="editModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="e-id">
+      <div class="modal-section">
+        <div class="section-lbl">Dati Anagrafici</div>
+        <div class="frow">
+          <div class="fg">
+            <label class="flabel">Nome</label>
+            <input type="text" class="finput" id="e-nome">
+          </div>
+          <div class="fg">
+            <label class="flabel">Cognome</label>
+            <input type="text" class="finput" id="e-cognome">
+          </div>
+        </div>
+        <div class="fg">
+          <label class="flabel">Email</label>
+          <input type="email" class="finput" id="e-email">
+        </div>
+        <div class="fg">
+          <label class="flabel">Azienda</label>
+          <input type="text" class="finput" id="e-azienda">
+        </div>
+      </div>
+      <div class="modal-section">
+        <div class="section-lbl">Status &amp; Gestione</div>
+        <div class="frow">
+          <div class="fg">
+            <label class="flabel">Status</label>
+            <select class="fselect" id="e-status">
+              <option value="creato">Creato</option>
+              <option value="in modifica">In Modifica</option>
+              <option value="inviato">Inviato</option>
+              <option value="risposto">Risposto</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label class="flabel">Data</label>
+            <input type="date" class="finput" id="e-data">
+          </div>
+        </div>
+      </div>
+      <div class="modal-section">
+        <div class="section-lbl">Contenuto Form</div>
+        <div class="fg">
+          <label class="flabel">Oggetto</label>
+          <input type="text" class="finput" id="e-oggetto" placeholder="Oggetto del form...">
+        </div>
+        <div class="fg">
+          <label class="flabel">Dettagli</label>
+          <textarea class="ftextarea" id="e-dettagli" placeholder="Descrizione dettagliata..."></textarea>
+        </div>
+        <div class="fg">
+          <label class="flabel">Note Interne</label>
+          <textarea class="ftextarea" id="e-note" placeholder="Note ad uso interno..."></textarea>
+        </div>
+      </div>
+      <div class="modal-section">
+        <div class="section-lbl">Domande del Form</div>
+        <div id="editQList"></div>
+        <div class="q-assign-row">
+          <select class="fselect" id="qPicker">
+            <option value="">— Seleziona domanda da aggiungere —</option>
+          </select>
+          <button class="btn btn-sec" id="btnAssignQ">Aggiungi</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-sec" data-close="editModal">Annulla</button>
+      <button class="btn btn-suc" id="btnSaveEdit">Salva Modifiche</button>
+    </div>
+  </div>
+</div>
+
+<!-- ╔══════════ MODAL: VIEW ══════════╗ -->
+<div class="overlay" id="viewModal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title">👀 Dettaglio Form</span>
+      <button class="modal-x" data-close="viewModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-section">
+        <div class="section-lbl">Dati Anagrafici</div>
+        <div class="frow">
+          <div class="fg">
+            <label class="flabel">Nome</label>
+            <div class="vfield" id="v-nome"></div>
+          </div>
+          <div class="fg">
+            <label class="flabel">Cognome</label>
+            <div class="vfield" id="v-cognome"></div>
+          </div>
+        </div>
+        <div class="fg">
+          <label class="flabel">Email</label>
+          <div class="vfield" id="v-email"></div>
+        </div>
+        <div class="fg">
+          <label class="flabel">Azienda</label>
+          <div class="vfield" id="v-azienda"></div>
+        </div>
+      </div>
+      <div class="modal-section">
+        <div class="section-lbl">Status &amp; Gestione</div>
+        <div class="frow">
+          <div class="fg">
+            <label class="flabel">Status</label>
+            <div class="vfield" id="v-status"></div>
+          </div>
+          <div class="fg">
+            <label class="flabel">Data</label>
+            <div class="vfield" id="v-data"></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-section">
+        <div class="section-lbl">Contenuto Form</div>
+        <div class="fg">
+          <label class="flabel">Oggetto</label>
+          <div class="vfield" id="v-oggetto"></div>
+        </div>
+        <div class="fg">
+          <label class="flabel">Dettagli</label>
+          <div class="vfield" id="v-dettagli" style="min-height:80px;white-space:pre-wrap;"></div>
+        </div>
+        <div class="fg">
+          <label class="flabel">Note Interne</label>
+          <div class="vfield" id="v-note" style="min-height:64px;white-space:pre-wrap;"></div>
+        </div>
+      </div>
+      <div class="modal-section">
+        <div class="section-lbl">Domande del Form</div>
+        <div id="viewQList"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-sec" data-close="viewModal">Chiudi</button>
+      <button class="btn btn-pri" id="btnToEdit">✏️ Modifica</button>
+    </div>
+  </div>
+</div>
+
+<!-- ╔══════════ MODAL: QUESTIONS ══════════╗ -->
+<div class="overlay" id="questionsModal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title">📋 Gestione Domande</span>
+      <button class="modal-x" data-close="questionsModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-section">
+        <div class="section-lbl">Banca Domande</div>
+        <div id="questionsBankList"></div>
+        <div class="q-add-row">
+          <input type="text" class="finput" id="newQText" placeholder="Testo della nuova domanda…">
+          <button class="btn btn-pri" id="btnAddQ">+ Aggiungi</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-sec" data-close="questionsModal">Chiudi</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toasts -->
+<div id="toasts"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════
+   UNITE! — Client Forms Manager
+   ═══════════════════════════════════════════════════ */
+
+const KEY = 'unite_clients';
+const AVATARS = [
+  '#e74c3c','#e67e22','#f39c12','#2ecc71','#1abc9c',
+  '#3498db','#8b5cf6','#e91e63','#00bcd4','#4caf50'
+];
+
+const STATUS_BADGE = {
+  'creato':      'badge-creato',
+  'in modifica': 'badge-inmodifica',
+  'inviato':     'badge-inviato',
+  'risposto':    'badge-risposto'
+};
+const STATUS_LABEL = {
+  'creato':      'Creato',
+  'in modifica': 'In Modifica',
+  'inviato':     'Inviato',
+  'risposto':    'Risposto'
+};
+
+const DEMO = [
+  { id:'d1', nome:'Marco',  cognome:'Bianchi',  email:'marco.bianchi@techcorp.it',    azienda:'TechCorp S.r.l.',  status:'creato',      data:'2026-03-01', oggetto:'',                   dettagli:'',                                          note:'Primo contatto — da definire obiettivi' },
+  { id:'d2', nome:'Sara',   cognome:'Conti',    email:'sara.conti@designstudio.it',   azienda:'Design Studio',    status:'in modifica', data:'2026-03-10', oggetto:'Revisione Brand',     dettagli:'Aggiornamento identità visiva completa',    note:'In attesa di feedback dal team creativo' },
+  { id:'d3', nome:'Luca',   cognome:'Ferrari',  email:'luca.ferrari@globalinc.com',   azienda:'Global Inc.',      status:'inviato',     data:'2026-03-15', oggetto:'Proposta Commerciale',dettagli:'Materiale promozionale e offerta allegata',  note:'Follow-up previsto per il 28/03' },
+  { id:'d4', nome:'Elena',  cognome:'Moretti',  email:'elena.moretti@startuphub.it',  azienda:'Startup Hub',      status:'risposto',    data:'2026-03-18', oggetto:'Partnership Strategy', dettagli:'Accordo di collaborazione firmato e attivo', note:'Cliente attivo — feedback eccellente' }
+];
+
+/* ── Helpers ─────────────────────────────── */
+function esc(s) {
+  return String(s||'')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function uid() { return 'c' + Date.now() + Math.random().toString(36).slice(2,6); }
+function avatarColor(s) {
+  let h = 0; for (let c of s) h = (h<<5)-h+c.charCodeAt(0);
+  return AVATARS[Math.abs(h) % AVATARS.length];
+}
+function initials(n,c) { return ((n?.[0]||'')+(c?.[0]||'')).toUpperCase(); }
+
+/* ── Storage ─────────────────────────────── */
+function load() { return JSON.parse(localStorage.getItem(KEY) || 'null'); }
+function save(d) { localStorage.setItem(KEY, JSON.stringify(d)); }
+
+function boot() {
+  if (!load()) save(DEMO);
+}
+
+/* ── Stats ───────────────────────────────── */
+function updateStats(list) {
+  const bump = (id, val) => {
+    const el = document.getElementById(id);
+    const old = +el.textContent;
+    el.textContent = val;
+    if (old !== val) { el.classList.add('bump'); setTimeout(()=>el.classList.remove('bump'),200); }
+  };
+  bump('statTotal',   list.length);
+  bump('statSent',    list.filter(c=>c.status==='inviato').length);
+  bump('statReplied', list.filter(c=>c.status==='risposto').length);
+}
+
+/* ── Render ──────────────────────────────── */
+function render() {
+  const all = load() || [];
+  updateStats(all);
+  const q       = (document.getElementById('clientSearch')?.value  || '').toLowerCase().trim();
+  const qOgg    = (document.getElementById('oggettoSearch')?.value || '').toLowerCase().trim();
+  const qStatus = (document.getElementById('statusFilter')?.value  || '');
+
+  // highlight active filter select
+  const sel = document.getElementById('statusFilter');
+  if (sel) sel.classList.toggle('active', !!qStatus);
+
+  const list = all.filter(c => {
+    if (q      && !(((c.nome+' '+c.cognome).toLowerCase().includes(q)) || (c.azienda||'').toLowerCase().includes(q) || (c.email||'').toLowerCase().includes(q))) return false;
+    if (qOgg   && !(c.oggetto||'').toLowerCase().includes(qOgg))   return false;
+    if (qStatus && c.status !== qStatus) return false;
+    return true;
+  });
+  const el = document.getElementById('clientsList');
+
+  if (!list.length) {
+    el.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">📋</div>
+      <h3>${q ? 'Nessun risultato per "'+q+'"' : 'Nessun cliente trovato'}</h3>
+      <p>${q ? 'Prova con un altro termine di ricerca.' : 'Clicca il pulsante&nbsp;<strong>+</strong> per aggiungere il primo cliente.'}</p>
+    </div>`;
+    return;
+  }
+
+  el.innerHTML = list.map((c,i) => {
+    const ini = initials(c.nome, c.cognome);
+    const col = avatarColor(c.nome+c.cognome);
+    const canEdit = c.status==='creato'   || c.status==='in modifica';
+    const canView = c.status==='inviato'  || c.status==='risposto';
+    const delay   = (i * 0.055).toFixed(3);
+    const subjectClass = c.oggetto ? 'client-subject' : 'client-subject empty';
+    const subjectText  = c.oggetto ? esc(c.oggetto) : 'Nessun oggetto';
+    return `<div class="client-row" style="animation-delay:${delay}s">
+      <div class="client-info">
+        <div class="avatar" style="background:${col}">${esc(ini)}</div>
+        <div>
+          <div class="client-name">${esc(c.nome)} ${esc(c.cognome)}</div>
+          <div class="client-company">${esc(c.azienda||'—')}</div>
+        </div>
+      </div>
+      <div class="${subjectClass}">${subjectText}</div>
+      <div>
+        <span class="badge ${STATUS_BADGE[c.status]||'badge-creato'}">${STATUS_LABEL[c.status]||c.status}</span>
+      </div>
+      <div class="actions">
+        ${canEdit ? `<button class="action-btn btn-edit"   title="Modifica"    onclick="doEdit('${c.id}')">✏️</button>` : ''}
+        ${canEdit ? `<button class="action-btn btn-send"   title="Invia form"  onclick="doSend('${c.id}')">📤</button>` : ''}
+        ${canView ? `<button class="action-btn btn-view"   title="Visualizza"  onclick="doView('${c.id}')">👀</button>` : ''}
+        <button class="action-btn btn-dup"    title="Duplica form" onclick="doDup('${c.id}')">📄</button>
+        <button class="action-btn btn-delete" title="Elimina"      onclick="doDel('${c.id}')">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ── Modal helpers ───────────────────────── */
+function openModal(id) { document.getElementById(id).classList.add('active'); }
+function closeModal(id){ document.getElementById(id).classList.remove('active'); }
+
+document.querySelectorAll('[data-close]').forEach(b => {
+  b.addEventListener('click', () => closeModal(b.dataset.close));
+});
+document.querySelectorAll('.overlay').forEach(ov => {
+  ov.addEventListener('click', e => { if(e.target===ov) closeModal(ov.id); });
+});
+
+/* ── Toast ───────────────────────────────── */
+function toast(msg, warn=false) {
+  const t = document.createElement('div');
+  t.className = 'toast' + (warn?' warn':'');
+  t.textContent = msg;
+  document.getElementById('toasts').prepend(t);
+  setTimeout(() => { t.classList.add('out'); setTimeout(()=>t.remove(), 300); }, 3200);
+}
+
+/* ── ADD ─────────────────────────────────── */
+function openAdd() {
+  ['a-nome','a-cognome','a-email','a-azienda','a-note'].forEach(id => {
+    document.getElementById(id).value='';
+  });
+  openModal('addModal');
+  setTimeout(()=>document.getElementById('a-nome').focus(),220);
+}
+
+document.getElementById('btnAdd').addEventListener('click', openAdd);
+document.getElementById('navCta').addEventListener('click', e => { e.preventDefault(); openAdd(); });
+
+document.getElementById('btnSaveAdd').addEventListener('click', () => {
+  const nome    = document.getElementById('a-nome').value.trim();
+  const cognome = document.getElementById('a-cognome').value.trim();
+  if (!nome || !cognome) {
+    toast('⚠️  Nome e Cognome sono obbligatori', true);
+    return;
+  }
+  const list = load() || [];
+  list.push({
+    id:       uid(),
+    nome, cognome,
+    email:    document.getElementById('a-email').value.trim(),
+    azienda:  document.getElementById('a-azienda').value.trim(),
+    note:     document.getElementById('a-note').value.trim(),
+    status:   'creato',
+    data:     new Date().toISOString().split('T')[0],
+    oggetto:  '',
+    dettagli: ''
+  });
+  save(list);
+  closeModal('addModal');
+  render();
+  toast('✅  Cliente aggiunto con successo!');
+});
+
+/* ── EDIT ────────────────────────────────── */
+function doEdit(id) {
+  const c = (load()||[]).find(x=>x.id===id);
+  if(!c) return;
+  document.getElementById('e-id').value       = id;
+  document.getElementById('e-nome').value     = c.nome    || '';
+  document.getElementById('e-cognome').value  = c.cognome || '';
+  document.getElementById('e-email').value    = c.email   || '';
+  document.getElementById('e-azienda').value  = c.azienda || '';
+  document.getElementById('e-status').value   = c.status  || 'creato';
+  document.getElementById('e-data').value     = c.data    || '';
+  document.getElementById('e-oggetto').value  = c.oggetto || '';
+  document.getElementById('e-dettagli').value = c.dettagli|| '';
+  document.getElementById('e-note').value     = c.note    || '';
+  openModal('editModal');
+  renderEditQ(id);
+}
+
+document.getElementById('btnSaveEdit').addEventListener('click', () => {
+  const id   = document.getElementById('e-id').value;
+  const list = load() || [];
+  const idx  = list.findIndex(x=>x.id===id);
+  if(idx<0) return;
+  list[idx] = {
+    ...list[idx],
+    nome:     document.getElementById('e-nome').value.trim(),
+    cognome:  document.getElementById('e-cognome').value.trim(),
+    email:    document.getElementById('e-email').value.trim(),
+    azienda:  document.getElementById('e-azienda').value.trim(),
+    status:   document.getElementById('e-status').value,
+    data:     document.getElementById('e-data').value,
+    oggetto:  document.getElementById('e-oggetto').value.trim(),
+    dettagli: document.getElementById('e-dettagli').value.trim(),
+    note:     document.getElementById('e-note').value.trim(),
+  };
+  save(list);
+  closeModal('editModal');
+  render();
+  toast('💾  Modifiche salvate con successo!');
+});
+
+/* ── VIEW ────────────────────────────────── */
+let _viewId = null;
+
+function doView(id) {
+  _viewId = id;
+  const c = (load()||[]).find(x=>x.id===id);
+  if(!c) return;
+  const set = (eid, val) => {
+    const el = document.getElementById(eid);
+    if(val) { el.textContent = val; el.classList.remove('empty-val'); }
+    else    { el.textContent = '—';  el.classList.add('empty-val'); }
+  };
+  set('v-nome',    c.nome);
+  set('v-cognome', c.cognome);
+  set('v-email',   c.email);
+  set('v-azienda', c.azienda);
+  set('v-status',  STATUS_LABEL[c.status]||c.status);
+  set('v-data',    c.data);
+  set('v-oggetto', c.oggetto);
+  set('v-dettagli',c.dettagli);
+  set('v-note',    c.note);
+  renderViewQ(id);
+  openModal('viewModal');
+}
+
+document.getElementById('btnToEdit').addEventListener('click', () => {
+  closeModal('viewModal');
+  if(_viewId) doEdit(_viewId);
+});
+
+/* ── SEND ────────────────────────────────── */
+function doSend(id) {
+  if (!confirm('Segnare il form come "Inviato"?')) return;
+  const list = load() || [];
+  const c = list.find(x => x.id === id);
+  if (!c) return;
+  c.status = 'inviato';
+  save(list);
+  render();
+  toast('📤  Form inviato!');
+}
+
+/* ── DUPLICATE ───────────────────────────── */
+function doDup(id) {
+  const c = (load() || []).find(x => x.id === id);
+  if (!c) return;
+  const list = load() || [];
+  const newC = {
+    ...c,
+    id:       uid(),
+    status:   'creato',
+    data:     new Date().toISOString().split('T')[0],
+    oggetto:  '',
+    dettagli: '',
+    domande:  (c.domande || []).map(d => ({ ...d, risposta: '', completata: false }))
+  };
+  list.push(newC);
+  save(list);
+  render();
+  doEdit(newC.id);
+  toast('📄  Form duplicato — modifica i dettagli.');
+}
+
+/* ── DELETE ──────────────────────────────── */
+function doDel(id) {
+  if(!confirm('Sei sicuro di voler eliminare questo cliente?')) return;
+  const list = (load()||[]).filter(c=>c.id!==id);
+  save(list);
+  render();
+  toast('🗑️  Cliente eliminato.');
+}
+
+/* ══════════════════════════════════════════
+   DOMANDE
+   ══════════════════════════════════════════ */
+const QKEY = 'unite_questions';
+function loadQ() { return JSON.parse(localStorage.getItem(QKEY) || '[]'); }
+function saveQ(d) { localStorage.setItem(QKEY, JSON.stringify(d)); }
+function quid()  { return 'q' + Date.now() + Math.random().toString(36).slice(2,5); }
+
+/* ── Banca domande ───────────────────────── */
+function renderQBank() {
+  const qs      = loadQ();
+  const clients = load() || [];
+  const el      = document.getElementById('questionsBankList');
+
+  if (!qs.length) {
+    el.innerHTML = '<p class="q-empty">Nessuna domanda ancora. Aggiungine una qui sotto.</p>';
+    return;
+  }
+
+  el.innerHTML = qs.map(q => {
+    // clients that already have this question
+    const assigned = clients.filter(c => (c.domande||[]).some(d => d.qid === q.id));
+    const assignedIds = assigned.map(c => c.id);
+    // clients not yet assigned
+    const available = clients.filter(c => !assignedIds.includes(c.id));
+
+    const tagsHtml = assigned.length
+      ? assigned.map(c => `
+          <span class="q-client-tag">
+            ${esc(c.nome)} ${esc(c.cognome)}
+            <button title="Rimuovi" onclick="removeQFromClient('${q.id}','${c.id}')">✕</button>
+          </span>`).join('')
+      : '<span class="q-no-clients">Nessun cliente assegnato</span>';
+
+    const pickerHtml = available.length
+      ? `<div class="q-assign-client-row">
+           <select class="fselect" id="qcp-${q.id}">
+             <option value="">— Assegna cliente —</option>
+             ${available.map(c => `<option value="${c.id}">${esc(c.nome)} ${esc(c.cognome)}${c.azienda?' — '+esc(c.azienda):''}</option>`).join('')}
+           </select>
+           <button class="btn btn-pri" onclick="assignQToClient('${q.id}')">Assegna</button>
+         </div>`
+      : '<p class="q-no-clients" style="margin-top:6px;">Tutti i clienti sono già assegnati.</p>';
+
+    return `<div class="q-item">
+      <div class="q-item-header">
+        <span class="q-text">${esc(q.testo)}</span>
+        <button class="action-btn btn-delete" title="Elimina" onclick="delQ('${q.id}')">🗑️</button>
+      </div>
+      <div class="q-item-body">
+        <div class="q-clients-label">Clienti assegnati</div>
+        <div class="q-client-tags">${tagsHtml}</div>
+        ${pickerHtml}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function assignQToClient(qid) {
+  const clientId = document.getElementById('qcp-' + qid)?.value;
+  if (!clientId) { toast('⚠️  Seleziona un cliente', true); return; }
+  const clients = load() || [];
+  const c = clients.find(x => x.id === clientId);
+  if (!c) return;
+  if (!c.domande) c.domande = [];
+  if (!c.domande.some(d => d.qid === qid)) {
+    c.domande.push({ qid, risposta: '', completata: false });
+    save(clients);
+    toast('✅  Domanda assegnata a ' + c.nome + ' ' + c.cognome);
+  }
+  renderQBank();
+}
+
+function removeQFromClient(qid, clientId) {
+  const clients = load() || [];
+  const c = clients.find(x => x.id === clientId);
+  if (!c) return;
+  c.domande = (c.domande || []).filter(d => d.qid !== qid);
+  save(clients);
+  renderQBank();
+  toast('🗑️  Domanda rimossa dal cliente.');
+}
+
+function delQ(id) {
+  if (!confirm('Eliminare questa domanda? Verrà rimossa anche da tutti i clienti.')) return;
+  saveQ(loadQ().filter(q => q.id !== id));
+  const clients = load() || [];
+  clients.forEach(c => { if (c.domande) c.domande = c.domande.filter(d => d.qid !== id); });
+  save(clients);
+  renderQBank();
+  toast('🗑️  Domanda eliminata.');
+}
+
+document.getElementById('btnAddQ').addEventListener('click', () => {
+  const text = document.getElementById('newQText').value.trim();
+  if (!text) { toast('⚠️  Inserisci il testo della domanda', true); return; }
+  const qs = loadQ();
+  qs.push({ id: quid(), testo: text });
+  saveQ(qs);
+  document.getElementById('newQText').value = '';
+  renderQBank();
+  toast('✅  Domanda aggiunta!');
+});
+
+document.getElementById('newQText').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('btnAddQ').click();
+});
+
+document.getElementById('navDomande').addEventListener('click', e => {
+  e.preventDefault();
+  renderQBank();
+  openModal('questionsModal');
+});
+
+/* ── Domande nel modal Edit ──────────────── */
+function renderEditQ(clientId) {
+  const c       = (load() || []).find(x => x.id === clientId);
+  const qs      = loadQ();
+  const assigned = c?.domande || [];
+
+  const listEl = document.getElementById('editQList');
+  if (!assigned.length) {
+    listEl.innerHTML = '<p class="q-empty">Nessuna domanda assegnata. Aggiungine una qui sotto.</p>';
+  } else {
+    listEl.innerHTML = assigned.map((d, i) => {
+      const q = qs.find(x => x.id === d.qid);
+      if (!q) return '';
+      return `<div class="q-client-item" data-qid="${d.qid}">
+        <div class="q-client-header">
+          <span class="q-num">${i + 1}.</span>
+          <span class="q-text">${esc(q.testo)}</span>
+          <button class="action-btn btn-delete q-remove" title="Rimuovi" onclick="removeEditQ('${d.qid}')">✕</button>
+        </div>
+        <textarea class="ftextarea q-answer" placeholder="Risposta…"
+          oninput="updateEditQAnswer('${d.qid}', this.value)">${esc(d.risposta || '')}</textarea>
+        <label class="q-check-label">
+          <input type="checkbox" class="q-checkbox" ${d.completata ? 'checked' : ''}
+            onchange="updateEditQCheck('${d.qid}', this.checked)">
+          Completata
+        </label>
+      </div>`;
+    }).join('');
+  }
+
+  const assignedIds = assigned.map(d => d.qid);
+  const available   = qs.filter(q => !assignedIds.includes(q.id));
+  const picker      = document.getElementById('qPicker');
+  picker.innerHTML  = '<option value="">— Seleziona domanda da aggiungere —</option>' +
+    available.map(q => `<option value="${q.id}">${esc(q.testo)}</option>`).join('');
+}
+
+function removeEditQ(qid) {
+  const id      = document.getElementById('e-id').value;
+  const clients = load() || [];
+  const idx     = clients.findIndex(x => x.id === id);
+  if (idx < 0) return;
+  clients[idx].domande = (clients[idx].domande || []).filter(d => d.qid !== qid);
+  save(clients);
+  renderEditQ(id);
+}
+
+function updateEditQAnswer(qid, val) {
+  const id      = document.getElementById('e-id').value;
+  const clients = load() || [];
+  const c       = clients.find(x => x.id === id);
+  if (!c) return;
+  const d = (c.domande || []).find(x => x.qid === qid);
+  if (d) { d.risposta = val; save(clients); }
+}
+
+function updateEditQCheck(qid, val) {
+  const id      = document.getElementById('e-id').value;
+  const clients = load() || [];
+  const c       = clients.find(x => x.id === id);
+  if (!c) return;
+  const d = (c.domande || []).find(x => x.qid === qid);
+  if (d) { d.completata = val; save(clients); }
+}
+
+document.getElementById('btnAssignQ').addEventListener('click', () => {
+  const id  = document.getElementById('e-id').value;
+  const qid = document.getElementById('qPicker').value;
+  if (!qid) { toast('⚠️  Seleziona una domanda dalla lista', true); return; }
+  const clients = load() || [];
+  const c = clients.find(x => x.id === id);
+  if (!c) return;
+  if (!c.domande) c.domande = [];
+  c.domande.push({ qid, risposta: '', completata: false });
+  save(clients);
+  renderEditQ(id);
+});
+
+/* ── Domande nel modal View ──────────────── */
+function renderViewQ(clientId) {
+  const c       = (load() || []).find(x => x.id === clientId);
+  const qs      = loadQ();
+  const assigned = c?.domande || [];
+  const el      = document.getElementById('viewQList');
+
+  if (!assigned.length) {
+    el.innerHTML = '<p class="q-empty">Nessuna domanda assegnata a questo cliente.</p>';
+    return;
+  }
+  el.innerHTML = assigned.map((d, i) => {
+    const q = qs.find(x => x.id === d.qid);
+    if (!q) return '';
+    return `<div class="q-view-item">
+      <div class="q-view-header">
+        <span class="q-num">${i + 1}.</span>
+        <span class="q-text">${esc(q.testo)}</span>
+        ${d.completata ? '<span class="q-done-badge">✓ Completata</span>' : ''}
+      </div>
+      <div class="vfield" style="white-space:pre-wrap;min-height:36px;">${d.risposta ? esc(d.risposta) : '<span class="empty-val">—</span>'}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ── INIT ────────────────────────────────── */
+boot();
+render();
+document.getElementById('clientSearch').addEventListener('input', render);
+document.getElementById('oggettoSearch').addEventListener('input', render);
+document.getElementById('statusFilter').addEventListener('change', render);
+</script>
+</body>
+</html>

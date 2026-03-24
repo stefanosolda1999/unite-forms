@@ -1,0 +1,4 @@
+# Ignora tutto tranne i file del progetto
+*
+!.gitignore
+!index.html
