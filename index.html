@@ -1497,7 +1497,7 @@ function renderQBank() {
     return;
   }
   el.innerHTML = qs.map(q => {
-    const assigned    = _clients.filter(c => (c.domande||[]).some(d => d.qid === q.id));
+    const assigned    = _clients.filter(c => (c.domande||[]).some(d => d.testo === q.testo));
     const assignedIds = assigned.map(c => c.id);
     const available   = _clients.filter(c => !assignedIds.includes(c.id));
     const tagsHtml = assigned.length
@@ -1531,7 +1531,9 @@ async function assignQToClient(qid) {
   if (!clientId) { toast('⚠️  Seleziona un cliente', true); return; }
   const c = _clients.find(x => x.id === clientId);
   if (!c) return;
-  const newDomande = [...(c.domande||[]), { qid, risposta: '', completata: false }];
+  const q = loadQ().find(x => x.id === qid);
+  if (!q) return;
+  const newDomande = [...(c.domande||[]), { testo: q.testo, risposta: '', completata: false }];
   try {
     await sbUpdate(clientId, { domande: newDomande });
     await render();
@@ -1543,7 +1545,9 @@ async function assignQToClient(qid) {
 async function removeQFromClient(qid, clientId) {
   const c = _clients.find(x => x.id === clientId);
   if (!c) return;
-  const newDomande = (c.domande||[]).filter(d => d.qid !== qid);
+  const q = loadQ().find(x => x.id === qid);
+  const testo = q?.testo;
+  const newDomande = (c.domande||[]).filter(d => d.testo !== testo);
   try {
     await sbUpdate(clientId, { domande: newDomande });
     await render();
@@ -1554,10 +1558,13 @@ async function removeQFromClient(qid, clientId) {
 
 async function delQ(id) {
   if (!confirm('Eliminare questa domanda? Verrà rimossa anche da tutti i clienti.')) return;
-  saveQ(loadQ().filter(q => q.id !== id));
-  const affected = _clients.filter(c => (c.domande||[]).some(d => d.qid === id));
+  const qs = loadQ();
+  const q  = qs.find(x => x.id === id);
+  saveQ(qs.filter(x => x.id !== id));
+  const testo    = q?.testo;
+  const affected = _clients.filter(c => (c.domande||[]).some(d => d.testo === testo));
   try {
-    await Promise.all(affected.map(c => sbUpdate(c.id, { domande: (c.domande||[]).filter(d => d.qid !== id) })));
+    await Promise.all(affected.map(c => sbUpdate(c.id, { domande: (c.domande||[]).filter(d => d.testo !== testo) })));
     await render();
     renderQBank();
     toast('🗑️  Domanda eliminata.');
@@ -1587,79 +1594,71 @@ document.getElementById('navDomande').addEventListener('click', e => {
 
 /* ── Domande nel modal Edit ──────────────── */
 function renderEditQ() {
-  const qs       = loadQ();
-  const assigned = _editDomande;
-  const listEl   = document.getElementById('editQList');
+  const qs             = loadQ();
+  const assigned       = _editDomande;
+  const listEl         = document.getElementById('editQList');
+  const assignedTestos = assigned.map(d => d.testo);
 
   listEl.innerHTML = assigned.length
-    ? assigned.map((d, i) => {
-        const q = qs.find(x => x.id === d.qid);
-        if (!q) return '';
-        return `<div class="q-client-item" data-qid="${d.qid}">
+    ? assigned.map((d, i) => `<div class="q-client-item">
           <div class="q-client-header">
             <span class="q-num">${i+1}.</span>
-            <span class="q-text">${esc(q.testo)}</span>
-            <button class="action-btn btn-delete q-remove" title="Rimuovi" onclick="removeEditQ('${d.qid}')">✕</button>
+            <span class="q-text">${esc(d.testo)}</span>
+            <button class="action-btn btn-delete q-remove" title="Rimuovi" onclick="removeEditQ(${i})">✕</button>
           </div>
           <textarea class="ftextarea q-answer" placeholder="Risposta…"
-            oninput="updateEditQAnswer('${d.qid}', this.value)">${esc(d.risposta||'')}</textarea>
+            oninput="updateEditQAnswer(${i}, this.value)">${esc(d.risposta||'')}</textarea>
           <label class="q-check-label">
             <input type="checkbox" class="q-checkbox" ${d.completata?'checked':''}
-              onchange="updateEditQCheck('${d.qid}', this.checked)">
+              onchange="updateEditQCheck(${i}, this.checked)">
             Completata
           </label>
-        </div>`;
-      }).join('')
+        </div>`).join('')
     : '<p class="q-empty">Nessuna domanda assegnata. Aggiungine una qui sotto.</p>';
 
-  const assignedIds = assigned.map(d => d.qid);
-  const picker      = document.getElementById('qPicker');
-  picker.innerHTML  = '<option value="">— Seleziona domanda da aggiungere —</option>' +
-    qs.filter(q => !assignedIds.includes(q.id)).map(q => `<option value="${q.id}">${esc(q.testo)}</option>`).join('');
+  const picker     = document.getElementById('qPicker');
+  picker.innerHTML = '<option value="">— Seleziona domanda da aggiungere —</option>' +
+    qs.filter(q => !assignedTestos.includes(q.testo))
+      .map(q => `<option value="${q.id}">${esc(q.testo)}</option>`).join('');
 }
 
-function removeEditQ(qid) {
-  _editDomande = _editDomande.filter(d => d.qid !== qid);
+function removeEditQ(idx) {
+  _editDomande.splice(idx, 1);
   renderEditQ();
 }
-function updateEditQAnswer(qid, val) {
-  const d = _editDomande.find(x => x.qid === qid);
-  if (d) d.risposta = val;
+function updateEditQAnswer(idx, val) {
+  if (_editDomande[idx]) _editDomande[idx].risposta = val;
 }
-function updateEditQCheck(qid, val) {
-  const d = _editDomande.find(x => x.qid === qid);
-  if (d) d.completata = val;
+function updateEditQCheck(idx, val) {
+  if (_editDomande[idx]) _editDomande[idx].completata = val;
 }
 
 document.getElementById('btnAssignQ').addEventListener('click', () => {
   const qid = document.getElementById('qPicker').value;
   if (!qid) { toast('⚠️  Seleziona una domanda dalla lista', true); return; }
-  _editDomande.push({ qid, risposta: '', completata: false });
+  const q = loadQ().find(x => x.id === qid);
+  if (!q) return;
+  _editDomande.push({ testo: q.testo, risposta: '', completata: false });
   renderEditQ();
 });
 
 /* ── Domande nel modal View ──────────────── */
 function renderViewQ(clientId) {
   const c        = _clients.find(x => x.id === clientId);
-  const qs       = loadQ();
   const assigned = c?.domande || [];
   const el       = document.getElementById('viewQList');
   if (!assigned.length) {
     el.innerHTML = '<p class="q-empty">Nessuna domanda assegnata a questo cliente.</p>';
     return;
   }
-  el.innerHTML = assigned.map((d, i) => {
-    const q = qs.find(x => x.id === d.qid);
-    if (!q) return '';
-    return `<div class="q-view-item">
+  el.innerHTML = assigned.map((d, i) => `<div class="q-view-item">
       <div class="q-view-header">
         <span class="q-num">${i+1}.</span>
-        <span class="q-text">${esc(q.testo)}</span>
+        <span class="q-text">${esc(d.testo)}</span>
         ${d.completata ? '<span class="q-done-badge">✓ Completata</span>' : ''}
       </div>
       <div class="vfield" style="white-space:pre-wrap;min-height:36px;">${d.risposta ? esc(d.risposta) : '<span class="empty-val">—</span>'}</div>
-    </div>`;
-  }).join('');
+    </div>`).join('');
 }
 
 /* ── LOGIN ───────────────────────────────── */
