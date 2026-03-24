@@ -1161,13 +1161,15 @@ const SB_HDR = {
   'Content-Type':  'application/json'
 };
 
+const SB_TABLE = 'unite-forms';
+
 async function sbGet() {
-  const r = await fetch(`${SB_URL}/clients?order=data.desc`, { headers: SB_HDR });
+  const r = await fetch(`${SB_URL}/${SB_TABLE}?order=data.desc`, { headers: SB_HDR });
   if (!r.ok) throw new Error(await r.text());
   return r.json();
 }
 async function sbInsert(data) {
-  const r = await fetch(`${SB_URL}/clients`, {
+  const r = await fetch(`${SB_URL}/${SB_TABLE}`, {
     method: 'POST',
     headers: { ...SB_HDR, 'Prefer': 'return=minimal' },
     body: JSON.stringify(data)
@@ -1175,7 +1177,7 @@ async function sbInsert(data) {
   if (!r.ok) throw new Error(await r.text());
 }
 async function sbUpdate(id, data) {
-  const r = await fetch(`${SB_URL}/clients?id=eq.${encodeURIComponent(id)}`, {
+  const r = await fetch(`${SB_URL}/${SB_TABLE}?id=eq.${encodeURIComponent(id)}`, {
     method: 'PATCH',
     headers: { ...SB_HDR, 'Prefer': 'return=minimal' },
     body: JSON.stringify(data)
@@ -1183,7 +1185,7 @@ async function sbUpdate(id, data) {
   if (!r.ok) throw new Error(await r.text());
 }
 async function sbDelete(id) {
-  const r = await fetch(`${SB_URL}/clients?id=eq.${encodeURIComponent(id)}`, {
+  const r = await fetch(`${SB_URL}/${SB_TABLE}?id=eq.${encodeURIComponent(id)}`, {
     method: 'DELETE',
     headers: SB_HDR
   });
