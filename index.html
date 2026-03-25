@@ -1193,7 +1193,7 @@ function mapFrom(r) {
     id: r.ID, nome: r.NOME, cognome: r.COGNOME, email: r.EMAIL,
     azienda: r.AZIENDA, status: r.STATUS, data: r.DATA,
     oggetto: r.OGGETTO, dettagli: r.DETTAGLI, note: r.NOTE,
-    domande: r.DOMANDE || []
+    domande: typeof r.DOMANDE === 'string' ? JSON.parse(r.DOMANDE) : (r.DOMANDE || [])
   };
 }
 function mapTo(d) {
