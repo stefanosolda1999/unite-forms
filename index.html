@@ -1165,9 +1165,11 @@ const SB_TABLE   = 'unite-forms';
 const SB_TABLE_Q = 'unite-questions';
 
 async function sbGetQ() {
-  const r = await fetch(`${SB_URL}/${SB_TABLE_Q}`, { headers: SB_HDR });
+  const r = await fetch(`${SB_URL}/${SB_TABLE_Q}?order=ID.asc`, { headers: SB_HDR });
   if (!r.ok) throw new Error(await r.text());
-  return (await r.json()).map(r => ({ id: r.ID, testo: r.TESTO }));
+  const rows = await r.json();
+  console.log('[sbGetQ] rows:', rows);
+  return rows.map(row => ({ id: row.ID, testo: row.TESTO }));
 }
 async function sbInsertQ(data) {
   const r = await fetch(`${SB_URL}/${SB_TABLE_Q}`, {
@@ -1516,6 +1518,7 @@ async function refreshQuestions() {
 async function renderQBank() {
   await refreshQuestions();
   const qs  = _questions;
+  console.log('[renderQBank] _questions:', qs);
   const el  = document.getElementById('questionsBankList');
   if (!qs.length) {
     el.innerHTML = '<p class="q-empty">Nessuna domanda ancora. Aggiungine una qui sotto.</p>';
@@ -1601,9 +1604,18 @@ document.getElementById('btnAddQ').addEventListener('click', async () => {
   try {
     await sbInsertQ({ id: quid(), testo: text });
     document.getElementById('newQText').value = '';
+  } catch(e) {
+    console.error('[btnAddQ] insert error:', e);
+    toast('⚠️  Errore nel salvataggio della domanda: ' + e.message, true);
+    return;
+  }
+  try {
     await renderQBank();
     toast('✅  Domanda aggiunta!');
-  } catch(e) { toast('⚠️  Errore nel salvataggio della domanda', true); }
+  } catch(e) {
+    console.error('[btnAddQ] renderQBank error:', e);
+    toast('⚠️  Domanda salvata ma errore nel rendering: ' + e.message, true);
+  }
 });
 
 document.getElementById('newQText').addEventListener('keydown', e => {
