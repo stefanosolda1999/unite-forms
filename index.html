@@ -1643,10 +1643,9 @@ function renderEditQ() {
             <button class="action-btn btn-delete q-remove" title="Rimuovi" onclick="removeEditQ(${i})">✕</button>
           </div>
           <textarea class="ftextarea q-answer" placeholder="Risposta…"
-            oninput="updateEditQAnswer(${i}, this.value)">${esc(d.risposta||'')}</textarea>
+            readonly>${esc(d.risposta||'')}</textarea>
           <label class="q-check-label">
-            <input type="checkbox" class="q-checkbox" ${d.completata?'checked':''}
-              onchange="updateEditQCheck(${i}, this.checked)">
+            <input type="checkbox" class="q-checkbox" ${d.completata?'checked':''} disabled>
             Completata
           </label>
         </div>`).join('')
