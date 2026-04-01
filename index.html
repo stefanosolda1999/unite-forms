@@ -1189,20 +1189,32 @@ async function sbDeleteQ(id) {
 
 /* Supabase usa colonne MAIUSCOLE — questi due mapper isolano la differenza */
 function mapFrom(r) {
+  const testoList  = typeof r.DOMANDE   === 'string' ? JSON.parse(r.DOMANDE)   : (r.DOMANDE   || []);
+  const risposte   = typeof r.RISPOSTE  === 'string' ? JSON.parse(r.RISPOSTE)  : (r.RISPOSTE  || []);
+  const completata = typeof r.COMPLETATA=== 'string' ? JSON.parse(r.COMPLETATA): (r.COMPLETATA|| []);
+  const domande = testoList.map((item, i) => ({
+    testo:      typeof item === 'string' ? item : (item.testo || ''),
+    risposta:   risposte[i]   !== undefined ? risposte[i]   : (typeof item === 'object' ? (item.risposta   || '') : ''),
+    completata: completata[i] !== undefined ? completata[i] : (typeof item === 'object' ? (item.completata || false) : false)
+  }));
   return {
     id: r.ID, nome: r.NOME, cognome: r.COGNOME, email: r.EMAIL,
     azienda: r.AZIENDA, status: r.STATUS, data: r.DATA,
     oggetto: r.OGGETTO, dettagli: r.DETTAGLI, note: r.NOTE,
-    domande: typeof r.DOMANDE === 'string' ? JSON.parse(r.DOMANDE) : (r.DOMANDE || [])
+    domande
   };
 }
 function mapTo(d) {
   const r = {};
   const map = { id:'ID', nome:'NOME', cognome:'COGNOME', email:'EMAIL',
                 azienda:'AZIENDA', status:'STATUS', data:'DATA',
-                oggetto:'OGGETTO', dettagli:'DETTAGLI', note:'NOTE', domande:'DOMANDE' };
+                oggetto:'OGGETTO', dettagli:'DETTAGLI', note:'NOTE' };
   for (const [k, K] of Object.entries(map)) {
     if (d[k] !== undefined) r[K] = d[k];
+  }
+  // DOMANDE: solo i testi — RISPOSTE e COMPLETATA vengono scritti dal form compilato
+  if (d.domande !== undefined) {
+    r['DOMANDE'] = d.domande.map(q => typeof q === 'string' ? q : q.testo);
   }
   return r;
 }
